@@ -1,103 +1,159 @@
+"use client";
 import Image from "next/image";
+import Wrapper from "./components/Wrapper";
+import { Layers } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createEmptyInvoice, getInvoicesByEmail } from "./actions";
+import { useUser } from "@clerk/nextjs";
+import confetti from "canvas-confetti";
+import { Invoice } from "@/type";
+import InvoiceComponent from "./components/InvoiceComponent";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [invoiceName, setInvoiceName] = useState("");
+  const [isNameValid, setIsNameValid] = useState(false);
+  const { user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress as string;
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const fetchInvoices = async () => {
+    try {
+      const data = await getInvoicesByEmail(email);
+      if (data) {
+        setInvoices(data)
+      }
+
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [email])
+
+  useEffect(() => {
+    setIsNameValid(invoiceName.length <= 60);
+  }, [invoiceName]);
+
+  const handleClick = () => {
+    const end = Date.now() + 1.5 * 1000; // 1.5 seconds
+    const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
+
+    const frame = () => {
+      if (Date.now() > end) return;
+
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 0, y: 0.5 },
+        colors: colors,
+      });
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 1, y: 0.5 },
+        colors: colors,
+      });
+
+      requestAnimationFrame(frame);
+    };
+
+    frame();
+  };
+
+  const handleCreateInvoice = async () => {
+    try {
+      if (email) {
+        await createEmptyInvoice(email, invoiceName);
+      }
+      setInvoiceName("");
+      fetchInvoices();
+      const modal = document.getElementById("my_modal_3") as HTMLDialogElement;
+      if (modal) {
+        modal.close();
+      }
+      handleClick();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <Wrapper>
+      {/* You can open the modal using document.getElementById('ID').showModal() method */}
+
+      <div className=" flex flex-col space-y-4">
+        <h1 className="font-bold text-lg">Mes Factures</h1>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          <div
+            className="cursor-pointer border border-accent rounded-xl flex justify-center items-center"
+            onClick={() =>
+              (
+                document.getElementById("my_modal_3") as HTMLDialogElement
+              ).showModal()
+            }
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <div className="font-bold text-accent flex flex-col justify-center items-center p-5">
+              Créer une facture
+              <div className="!bg-accent-content !text-accent rounded-full p-2">
+                <Layers className="size-5" />
+              </div>
+            </div>
+          </div>
+
+          {
+            invoices.length > 0 && (
+              (invoices.map((invoice, index) => (
+                <div key={index}>
+                  <InvoiceComponent invoice={invoice} index={index} />
+
+                </div>
+              )))
+            )
+          }
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        <dialog id="my_modal_3" className="modal">
+          <div className="modal-box">
+            <form method="dialog">
+              {/* if there is a button in form, it will close the modal */}
+              <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+                ✕
+              </button>
+            </form>
+            <h3 className="font-bold text-lg">Nouvelle Facture</h3>
+            <input
+              type="text"
+              placeholder="Nom de la facture(max 60 caractères)"
+              className="input input-bordered w-full my-4"
+              value={invoiceName}
+              onChange={(e) => {
+                setInvoiceName(e.target.value);
+              }}
+            />
+
+            {!isNameValid && (
+              <p className="text-red-500 mb-4 text-xs">
+                Le nom de la facture doit contenir moins de 60 caractères
+              </p>
+            )}
+
+            <button
+              className="btn btn-accent"
+              disabled={!isNameValid || !invoiceName}
+              onClick={handleCreateInvoice}
+            >
+              Créer
+            </button>
+          </div>
+        </dialog>
+      </div>
+    </Wrapper>
   );
 }
