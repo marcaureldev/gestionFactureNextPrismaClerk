@@ -5,7 +5,7 @@ export interface Invoice extends PrismaInvoice {
     lines: InvoiceLine[];
 }
 
-export interface Total {
+export interface Totals {
     totalHT: number,
     totalVAT: number,
     totalTTC: number,
