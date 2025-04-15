@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Invoice, Totals } from "@/type";
 import { ArrowDownFromLine, Layers } from "lucide-react";
+import html2canvas from "html2canvas-pro";
+import jsPDF from "jspdf";
+import confetti from "canvas-confetti";
 
 interface FacturePDFProps {
   invoice: Invoice;
@@ -18,16 +21,77 @@ function formatDate(dateString: string): string {
 }
 
 const InvoicePDF: React.FC<FacturePDFProps> = ({ invoice, totals }) => {
+  const factureRef = useRef<HTMLDivElement>(null);
+
+  const handleClick = () => {
+    const end = Date.now() + 1.5 * 1000; // 1.5 seconds
+    const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"];
+
+    const frame = () => {
+      if (Date.now() > end) return;
+
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 0, y: 0.5 },
+        colors: colors,
+      });
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 1, y: 0.5 },
+        colors: colors,
+      });
+
+      requestAnimationFrame(frame);
+    };
+
+    frame();
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = factureRef.current;
+
+    if (element) {
+      try {
+        const canvas = await html2canvas(element, { scale: 3, useCORS: true });
+        const imgData = canvas.toDataURL("image/png");
+
+        const pdf = new jsPDF({
+          orientation: "portrait",
+          unit: "mm",
+          format: "A4",
+        });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`Facture-${invoice.id}.pdf`);
+        handleClick();
+      } catch (err) {
+        console.error("Erreur lors de la génération du PDF: ", err);
+      }
+    }
+  };
+
   return (
     <div className="mt-4 hidden lg:block">
       <div className="border-base-300 border-2 border-dashed rounded-xl p-5">
         <div>
-          <button className="btn btn-sm btn-accent mb-4">
+          <button
+            className="btn btn-sm btn-accent mb-4"
+            onClick={handleDownloadPDF}
+          >
             Facture PDF
             <ArrowDownFromLine className="size-4 ml-2" />
           </button>
 
-          <div className="p-8">
+          <div className="p-8" ref={factureRef}>
             <div className="flex justify-between items-center text-sm">
               <div className="flex flex-col">
                 <div>
@@ -40,7 +104,7 @@ const InvoicePDF: React.FC<FacturePDFProps> = ({ invoice, totals }) => {
                     </span>
                   </div>
                 </div>
-                <h1 className="text-7xl font-bold uppercase">Facture</h1>
+                <h1 className="text-6xl font-bold uppercase">Facture</h1>
               </div>
               <div className="text-right uppercase">
                 <p className="badge badge-ghost">Facture n° {invoice.id}</p>
@@ -115,7 +179,9 @@ const InvoicePDF: React.FC<FacturePDFProps> = ({ invoice, totals }) => {
 
               <div className="flex justify-between">
                 <div className="font-bold">Total Toutes Taxes Comprises</div>
-                <div className="badge badge-accent">{totals.totalTTC.toFixed(2)}€</div>
+                <div className="badge badge-accent">
+                  {totals.totalTTC.toFixed(2)}€
+                </div>
               </div>
             </div>
           </div>

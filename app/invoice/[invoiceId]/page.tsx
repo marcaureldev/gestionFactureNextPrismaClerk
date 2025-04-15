@@ -149,7 +149,7 @@ const page = ({ params }: { params: Promise<{ invoiceId: string }> }) => {
         <div className="flex flex-col w-full md:w-1/3">
           <div className="mb-4 bg-base-200 rounded-xl p-5">
             <div className="flex justify-between items-center mb-4">
-              <div className="badge badge-accent">Résumé des Totaux</div>
+              <div className="badge badge-accent whitespace-nowrap">Résumé des Totaux</div>
               <VATControl invoice={invoice} setInvoice={setInvoice} />
             </div>
 

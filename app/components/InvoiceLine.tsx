@@ -1,5 +1,5 @@
 import { Invoice } from "@/type";
-import { InvoiceLine } from "@/generated/prisma";
+import { InvoiceLine as InvoiceLineType } from "@/generated/prisma";
 import { Plus, Trash } from "lucide-react";
 import React from "react";
 
@@ -10,7 +10,7 @@ interface Props {
 
 const InvoiceLine: React.FC<Props> = ({ invoice, setInvoice }) => {
   const handleAddLine = () => {
-    const newLine: InvoiceLine = {
+    const newLine: InvoiceLineType = {
       id: `${Date.now()}`,
       description: "",
       quantity: 1,
