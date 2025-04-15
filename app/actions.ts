@@ -178,9 +178,9 @@ export async function updateInvoice(invoice: Invoice) {
                 vatRate: invoice.vatRate,
                 status: invoice.status,
             },
-            include: {
-                lines: true,
-            },
+            // include: {
+            //     lines: true,
+            // },
         })
 
         const existingLines = existingInvoice.lines
@@ -219,17 +219,17 @@ export async function updateInvoice(invoice: Invoice) {
                             unitPrice: line.unitPrice,
                         },
                     })
-                } else {
-                    // Crééer une nouvelle ligne
-                    await prisma.invoiceLine.create({
-                        data: {
-                            description: line.description,
-                            quantity: line.quantity,
-                            unitPrice: line.unitPrice,
-                            invoiceId: invoice.id,
-                        },
-                    })
                 }
+            } else {
+                // Crééer une nouvelle ligne
+                await prisma.invoiceLine.create({
+                    data: {
+                        description: line.description,
+                        quantity: line.quantity,
+                        unitPrice: line.unitPrice,
+                        invoiceId: invoice.id,
+                    },
+                })
             }
         }
     } catch (err) {
